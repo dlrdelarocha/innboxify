@@ -30,16 +30,16 @@ export const useAuthStore = defineStore('auth', () => {
       const unsubscribe = onAuthChange((firebaseUser) => {
         console.log('🔄 Estado de autenticación:', firebaseUser ? '✅ Autenticado' : '⚫ Sin autenticar')
 
+        user.value = firebaseUser
+
+        if (firebaseUser) {
+          console.log('👤 Usuario:', firebaseUser.email)
+        } else {
+          accessToken.value = null
+          sessionStorage.removeItem(TOKEN_KEY)
+        }
+
         if (!authStateResolved) {
-          user.value = firebaseUser
-
-          if (firebaseUser) {
-            console.log('👤 Usuario:', firebaseUser.email)
-          } else {
-            accessToken.value = null
-            sessionStorage.removeItem(TOKEN_KEY)
-          }
-
           authStateResolved = true
           loading.value = false
           _resolveReady()
