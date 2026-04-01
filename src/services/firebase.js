@@ -5,7 +5,9 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  sessionPersistence
 } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -13,12 +15,6 @@ const firebaseConfig = {
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
-}
-
-// For Vercel deployment, we need to tell Firebase to use the correct auth domain
-// This ensures OAuth redirects work properly
-if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-  firebaseConfig.authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN
 }
 
 export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
@@ -30,6 +26,11 @@ if (isConfigured) {
   const app = initializeApp(firebaseConfig)
   auth = getAuth(app)
 
+  // Set persistence to SESSION (clears on browser close - best practice)
+  setPersistence(auth, sessionPersistence).catch(error => {
+    console.warn('Could not set session persistence:', error)
+  })
+
   const GMAIL_SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.modify',
@@ -38,21 +39,28 @@ if (isConfigured) {
   ]
 
   provider = new GoogleAuthProvider()
+  provider.setCustomParameters({
+    prompt: 'consent' // Always show consent screen
+  })
   GMAIL_SCOPES.forEach(scope => provider.addScope(scope))
 }
 
 export async function loginWithGoogle() {
   if (!isConfigured) throw new Error('Firebase not configured')
   try {
-    console.log('🔐 Attempting signInWithRedirect...')
+    console.log('🔐 Iniciando autenticación con Google...')
+    console.log('📱 Redirigiendo a Google...')
     await signInWithRedirect(auth, provider)
-    // Note: After redirect, the page will reload and getRedirectResult will be called automatically
+    // Note: Page will redirect to Google, then back to app
   } catch (error) {
-    console.error('❌ Firebase redirect error:', error)
-    console.error('Error code:', error.code)
+    console.error('❌ Error en autenticación:', error)
+    console.error('Código de error:', error.code)
 
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('Este dominio no está autorizado en Firebase. Contacta al administrador.')
+      throw new Error('Este dominio no está autorizado en Firebase. Verifica Firebase Console.')
+    }
+    if (error.code === 'auth/operation-not-supported-in-this-environment') {
+      throw new Error('OAuth no está soportado en este navegador.')
     }
 
     throw error
@@ -62,26 +70,40 @@ export async function loginWithGoogle() {
 export async function getRedirectResultIfExists() {
   if (!auth) return null
   try {
-    console.log('🔍 Checking for redirect result...')
+    console.log('🔍 Verificando resultado de autenticación...')
     const result = await getRedirectResult(auth)
+
     if (result) {
-      console.log('✅ Redirect result found')
+      console.log('✅ Autenticación completada')
       const credential = GoogleAuthProvider.credentialFromResult(result)
+
+      if (!credential?.accessToken) {
+        console.warn('⚠️ Token de acceso no disponible')
+      }
+
       return {
         user: result.user,
-        accessToken: credential.accessToken
+        accessToken: credential?.accessToken || null
       }
     }
+    console.log('ℹ️ No hay sesión de autenticación en progreso')
   } catch (error) {
-    console.error('❌ Error getting redirect result:', error)
-    throw error
+    console.error('❌ Error al obtener resultado de autenticación:', error)
+    console.error('Código de error:', error.code)
+    // Don't throw here - let auth state handle it
   }
   return null
 }
 
 export async function logout() {
   if (!auth) return
-  await signOut(auth)
+  try {
+    await signOut(auth)
+    console.log('✅ Sesión cerrada')
+  } catch (error) {
+    console.error('❌ Error al cerrar sesión:', error)
+    throw error
+  }
 }
 
 export function onAuthChange(callback) {

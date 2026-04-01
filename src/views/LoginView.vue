@@ -17,16 +17,12 @@ async function handleLogin() {
   loading.value = true
   error.value = null
   try {
-    console.log('🔐 Iniciando login con Google...')
-    console.log('Firebase ready:', firebaseReady)
+    console.log('🔐 Iniciando autenticación con Google...')
     await auth.login()
-    // With redirect, the page will reload and auth.init() will handle the result
     console.log('📱 Redirigiendo a Google para autenticación...')
   } catch (e) {
-    console.error('❌ Error de login:', e)
-    console.error('Error code:', e.code)
-    console.error('Error message:', e.message)
-    error.value = e.message
+    console.error('❌ Error en autenticación:', e)
+    error.value = e.message || 'Error en autenticación. Por favor intenta de nuevo.'
     loading.value = false
   }
 }
