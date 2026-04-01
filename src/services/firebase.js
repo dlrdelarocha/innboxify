@@ -14,6 +14,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
+// For Vercel deployment, we need to tell Firebase to use the correct auth domain
+// This ensures OAuth redirects work properly
+if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+  firebaseConfig.authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN
+}
+
 export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
 
 let auth = null

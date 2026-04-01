@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Auth Handler</title>
+    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js"></script>
+</head>
+<body>
+    <script>
+        // This script handles the OAuth redirect from Firebase
+        // It processes the authentication result and communicates back to the opener window
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+
+        // Firebase will handle the redirect automatically
+        // This page just needs to exist and be accessible
+
+        if (error) {
+            console.error('Auth error:', error);
+            window.close();
+        } else {
+            // Firebase's client SDK will handle the rest
+            // The window will be closed automatically by the SDK
+        }
+    </script>
+</body>
+</html>
