@@ -18,10 +18,13 @@ async function handleLogin() {
   error.value = null
   try {
     console.log('🔐 Iniciando autenticación con Google...')
+    console.log('⏳ Abriendo popup de Google...')
     await auth.login()
-    console.log('📱 Redirigiendo a Google para autenticación...')
+    console.log('✅ Autenticación completada')
+    // No ocultes loading - dejar que onAuthChange lo haga
   } catch (e) {
     console.error('❌ Error en autenticación:', e)
+    console.error('Error completo:', e.message)
     error.value = e.message || 'Error en autenticación. Por favor intenta de nuevo.'
     loading.value = false
   }

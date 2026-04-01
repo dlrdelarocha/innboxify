@@ -76,6 +76,8 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('🔐 Iniciando login con Google...')
       const result = await loginWithGoogle()
 
+      console.log('🔄 Popup cerrado - esperando a que Firebase procese...')
+
       // Guardar token si está disponible
       if (result?.accessToken) {
         console.log('💾 Guardando token de acceso...')
@@ -83,8 +85,14 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = result.accessToken
       }
 
-      // El user se asignará vía onAuthChange
-      console.log('✅ Login completado')
+      // Asignar user inmediatamente si está disponible
+      if (result?.user) {
+        user.value = result.user
+        console.log('👤 Usuario asignado:', result.user.email)
+      }
+
+      // El estado completo se asignará vía onAuthChange
+      console.log('✅ Popup procesado')
     } catch (loginError) {
       console.error('❌ Error en login:', loginError)
       error.value = loginError.message

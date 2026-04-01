@@ -48,16 +48,20 @@ export async function loginWithGoogle() {
   if (!isConfigured) throw new Error('Firebase no está configurado')
   try {
     console.log('🔐 Abriendo popup de Google...')
+    console.log('🌐 Dominio actual:', window.location.hostname)
+    console.log('🔑 Auth domain:', firebaseConfig.authDomain)
 
     // Usar signInWithPopup en lugar de redirect
     // En Vercel, popup funciona mejor que redirect
     const result = await signInWithPopup(auth, provider)
 
     console.log('✅ Autenticación completada')
+    console.log('👤 Usuario:', result.user.email)
+
     const credential = GoogleAuthProvider.credentialFromResult(result)
 
     if (!credential?.accessToken) {
-      console.warn('⚠️ Token de acceso no disponible')
+      console.warn('⚠️ Token de acceso no disponible (esto es normal para OAuth)')
     } else {
       console.log('✅ Token de acceso obtenido')
     }
@@ -69,15 +73,22 @@ export async function loginWithGoogle() {
   } catch (error) {
     console.error('❌ Error en autenticación:', error)
     console.error('Código de error:', error.code)
+    console.error('Mensaje completo:', error.message)
 
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('Este dominio no está autorizado en Firebase. Verifica Firebase Console.')
+      throw new Error('Este dominio no está autorizado en Firebase. Agrega innboxify.vercel.app a Firebase Console.')
     }
     if (error.code === 'auth/popup-blocked') {
-      throw new Error('El popup fue bloqueado. Verifica tu navegador.')
+      throw new Error('El popup fue bloqueado. Desactiva el bloqueador de popups.')
+    }
+    if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Cerraste el popup de Google.')
     }
     if (error.code === 'auth/operation-not-supported-in-this-environment') {
       throw new Error('OAuth no está soportado en este navegador.')
+    }
+    if (error.code === 'auth/network-request-failed') {
+      throw new Error('Error de conexión. Verifica tu internet.')
     }
 
     throw error
