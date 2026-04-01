@@ -43,6 +43,7 @@ if (isConfigured) {
 export async function loginWithGoogle() {
   if (!isConfigured) throw new Error('Firebase not configured')
   try {
+    console.log('Attempting signInWithPopup...')
     const result = await signInWithPopup(auth, provider)
     const credential = GoogleAuthProvider.credentialFromResult(result)
     return {
@@ -51,10 +52,17 @@ export async function loginWithGoogle() {
     }
   } catch (error) {
     console.error('Firebase login error:', error)
+    console.error('Error code:', error.code)
+
+    // If popup fails, it might be due to Vercel's environment
     // Re-throw con mensaje más descriptivo
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error('Este dominio no está autorizado en Firebase. Contacta al administrador.')
     }
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('El popup de autenticación fue bloqueado. Verifica tu navegador.')
+    }
+
     throw error
   }
 }
