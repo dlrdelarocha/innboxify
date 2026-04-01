@@ -7,7 +7,7 @@ import {
   signOut,
   onAuthStateChanged,
   setPersistence,
-  sessionPersistence
+  browserSessionPersistence
 } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -27,7 +27,7 @@ if (isConfigured) {
   auth = getAuth(app)
 
   // Set persistence to SESSION (clears on browser close - best practice)
-  setPersistence(auth, sessionPersistence).catch(error => {
+  setPersistence(auth, browserSessionPersistence).catch(error => {
     console.warn('Could not set session persistence:', error)
   })
 
