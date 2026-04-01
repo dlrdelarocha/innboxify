@@ -36,11 +36,20 @@ if (isConfigured) {
 
 export async function loginWithGoogle() {
   if (!isConfigured) throw new Error('Firebase not configured')
-  const result = await signInWithPopup(auth, provider)
-  const credential = GoogleAuthProvider.credentialFromResult(result)
-  return {
-    user: result.user,
-    accessToken: credential.accessToken
+  try {
+    const result = await signInWithPopup(auth, provider)
+    const credential = GoogleAuthProvider.credentialFromResult(result)
+    return {
+      user: result.user,
+      accessToken: credential.accessToken
+    }
+  } catch (error) {
+    console.error('Firebase login error:', error)
+    // Re-throw con mensaje más descriptivo
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('Este dominio no está autorizado en Firebase. Contacta al administrador.')
+    }
+    throw error
   }
 }
 
