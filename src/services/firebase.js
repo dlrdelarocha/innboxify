@@ -16,7 +16,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
-export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
+console.log('🔧 Firebase Config Debug:')
+console.log('  API Key present:', !!firebaseConfig.apiKey)
+console.log('  Auth Domain:', firebaseConfig.authDomain)
+console.log('  Project ID:', firebaseConfig.projectId)
+console.log('  App ID present:', !!firebaseConfig.appId)
+
+export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain)
 
 let auth = null
 let provider = null
