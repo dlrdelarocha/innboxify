@@ -2,7 +2,8 @@ import { initializeApp } from 'firebase/app'
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth'
@@ -43,28 +44,39 @@ if (isConfigured) {
 export async function loginWithGoogle() {
   if (!isConfigured) throw new Error('Firebase not configured')
   try {
-    console.log('Attempting signInWithPopup...')
-    const result = await signInWithPopup(auth, provider)
-    const credential = GoogleAuthProvider.credentialFromResult(result)
-    return {
-      user: result.user,
-      accessToken: credential.accessToken
-    }
+    console.log('🔐 Attempting signInWithRedirect...')
+    await signInWithRedirect(auth, provider)
+    // Note: After redirect, the page will reload and getRedirectResult will be called automatically
   } catch (error) {
-    console.error('Firebase login error:', error)
+    console.error('❌ Firebase redirect error:', error)
     console.error('Error code:', error.code)
 
-    // If popup fails, it might be due to Vercel's environment
-    // Re-throw con mensaje más descriptivo
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error('Este dominio no está autorizado en Firebase. Contacta al administrador.')
-    }
-    if (error.code === 'auth/popup-blocked') {
-      throw new Error('El popup de autenticación fue bloqueado. Verifica tu navegador.')
     }
 
     throw error
   }
+}
+
+export async function getRedirectResultIfExists() {
+  if (!auth) return null
+  try {
+    console.log('🔍 Checking for redirect result...')
+    const result = await getRedirectResult(auth)
+    if (result) {
+      console.log('✅ Redirect result found')
+      const credential = GoogleAuthProvider.credentialFromResult(result)
+      return {
+        user: result.user,
+        accessToken: credential.accessToken
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error getting redirect result:', error)
+    throw error
+  }
+  return null
 }
 
 export async function logout() {

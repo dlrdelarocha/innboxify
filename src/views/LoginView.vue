@@ -20,14 +20,13 @@ async function handleLogin() {
     console.log('🔐 Iniciando login con Google...')
     console.log('Firebase ready:', firebaseReady)
     await auth.login()
-    console.log('✅ Login exitoso, redirigiendo a dashboard...')
-    router.push('/dashboard')
+    // With redirect, the page will reload and auth.init() will handle the result
+    console.log('📱 Redirigiendo a Google para autenticación...')
   } catch (e) {
     console.error('❌ Error de login:', e)
     console.error('Error code:', e.code)
     console.error('Error message:', e.message)
     error.value = e.message
-  } finally {
     loading.value = false
   }
 }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginWithGoogle, logout as firebaseLogout, onAuthChange } from '../services/firebase.js'
+import { loginWithGoogle, logout as firebaseLogout, onAuthChange, getRedirectResultIfExists } from '../services/firebase.js'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -10,9 +10,22 @@ export const useAuthStore = defineStore('auth', () => {
   let _resolveReady
   const ready = new Promise(resolve => { _resolveReady = resolve })
 
-  function init() {
+  async function init() {
     const savedToken = sessionStorage.getItem('gmail_access_token')
     if (savedToken) accessToken.value = savedToken
+
+    // Check if we're coming back from a redirect
+    try {
+      const redirectResult = await getRedirectResultIfExists()
+      if (redirectResult) {
+        console.log('✅ Login successful from redirect')
+        user.value = redirectResult.user
+        accessToken.value = redirectResult.accessToken
+        sessionStorage.setItem('gmail_access_token', redirectResult.accessToken)
+      }
+    } catch (error) {
+      console.error('Error processing redirect:', error)
+    }
 
     onAuthChange((firebaseUser) => {
       user.value = firebaseUser

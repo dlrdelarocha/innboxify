@@ -11,8 +11,8 @@ const route = useRoute()
 
 const showNavbar = computed(() => route.name !== 'login' && auth.user)
 
-onMounted(() => {
-  auth.init()
+onMounted(async () => {
+  await auth.init()
   settings.loadApiKey()
 })
 </script>
