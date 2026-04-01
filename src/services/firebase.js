@@ -1,0 +1,60 @@
+import { initializeApp } from 'firebase/app'
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth'
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+}
+
+export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
+
+let auth = null
+let provider = null
+
+if (isConfigured) {
+  const app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+
+  const GMAIL_SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.modify',
+    'https://www.googleapis.com/auth/gmail.labels',
+    'https://www.googleapis.com/auth/gmail.settings.basic'
+  ]
+
+  provider = new GoogleAuthProvider()
+  GMAIL_SCOPES.forEach(scope => provider.addScope(scope))
+}
+
+export async function loginWithGoogle() {
+  if (!isConfigured) throw new Error('Firebase not configured')
+  const result = await signInWithPopup(auth, provider)
+  const credential = GoogleAuthProvider.credentialFromResult(result)
+  return {
+    user: result.user,
+    accessToken: credential.accessToken
+  }
+}
+
+export async function logout() {
+  if (!auth) return
+  await signOut(auth)
+}
+
+export function onAuthChange(callback) {
+  if (!auth) {
+    callback(null)
+    return () => {}
+  }
+  return onAuthStateChanged(auth, callback)
+}
+
+export { auth }
