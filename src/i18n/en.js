@@ -6,7 +6,7 @@ export default {
     logout: 'Sign out'
   },
   login: {
-    title: 'Inboxly',
+    title: 'Innboxify',
     subtitle: 'Manage, classify and clean your inbox with artificial intelligence',
     signIn: 'Sign in with Google',
     features: {

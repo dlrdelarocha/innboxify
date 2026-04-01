@@ -24,7 +24,7 @@ async function handleLogout() {
           <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
         </div>
         <div>
-          <h1 class="font-black text-white text-lg leading-tight font-headline">Inboxly</h1>
+          <h1 class="font-black text-white text-lg leading-tight font-headline">Innboxify</h1>
           <p class="text-slate-500 text-[10px] uppercase tracking-widest">Smart Inbox</p>
         </div>
       </div>

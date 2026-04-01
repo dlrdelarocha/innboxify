@@ -6,7 +6,7 @@ export default {
     logout: 'Cerrar sesión'
   },
   login: {
-    title: 'Inboxly',
+    title: 'Innboxify',
     subtitle: 'Gestiona, clasifica y limpia tu bandeja de entrada con inteligencia artificial',
     signIn: 'Iniciar sesión con Google',
     features: {
