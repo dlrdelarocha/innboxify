@@ -62,14 +62,12 @@ async function handleLogin() {
       <h1 class="text-headline-sm font-extrabold tracking-tight text-on-surface mb-2">{{ t('login.title') }}</h1>
       <p class="text-on-surface-variant text-sm mb-8">{{ t('login.subtitle') }}</p>
 
-      <!-- Firebase not configured warning -->
+      <!-- Supabase not configured warning -->
       <div v-if="!firebaseReady" class="mb-6 p-4 bg-tertiary/5 border border-tertiary/20 rounded-xl text-left">
-        <p class="text-sm font-semibold text-tertiary mb-2">Firebase no configurado</p>
+        <p class="text-sm font-semibold text-tertiary mb-2">Supabase no configurado</p>
         <p class="text-xs text-on-surface-variant mb-2">Crea un archivo <code class="bg-tertiary/10 px-1 rounded">.env</code> en la raiz del proyecto con:</p>
-        <pre class="text-xs bg-tertiary/10 p-2 rounded overflow-x-auto text-on-surface">VITE_FIREBASE_API_KEY=tu_api_key
-VITE_FIREBASE_AUTH_DOMAIN=tu_proyecto.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=tu_project_id
-VITE_FIREBASE_APP_ID=tu_app_id</pre>
+        <pre class="text-xs bg-tertiary/10 p-2 rounded overflow-x-auto text-on-surface">VITE_SUPABASE_URL=tu_supabase_url
+VITE_SUPABASE_ANON_KEY=tu_anon_key</pre>
         <p class="text-xs text-on-surface-variant mt-2">Luego reinicia el servidor de desarrollo.</p>
       </div>
 

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginWithGoogle, logout as firebaseLogout, onAuthChange } from '../services/firebase.js'
+import { loginWithGoogle, logout as supabaseLogout, onAuthChange } from '../services/firebase.js'
 
-const TOKEN_KEY = 'gmail_access_token'
+const TOKEN_KEY = 'supabase_access_token'
 const TIMEOUT_MS = 3000 // 3 segundos máximo para resolver
 
 export const useAuthStore = defineStore('auth', () => {
@@ -27,13 +27,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Escucha cambios de estado de autenticación
       let authStateResolved = false
-      const unsubscribe = onAuthChange((firebaseUser) => {
-        console.log('🔄 Estado de autenticación:', firebaseUser ? '✅ Autenticado' : '⚫ Sin autenticar')
+      const unsubscribe = onAuthChange((supabaseUser) => {
+        console.log('🔄 Estado de autenticación:', supabaseUser ? '✅ Autenticado' : '⚫ Sin autenticar')
 
-        user.value = firebaseUser
+        user.value = supabaseUser
 
-        if (firebaseUser) {
-          console.log('👤 Usuario:', firebaseUser.email)
+        if (supabaseUser) {
+          console.log('👤 Usuario:', supabaseUser.email)
         } else {
           accessToken.value = null
           sessionStorage.removeItem(TOKEN_KEY)
@@ -74,24 +74,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       error.value = null
       console.log('🔐 Iniciando login con Google...')
-      const result = await loginWithGoogle()
+      await loginWithGoogle()
 
-      console.log('🔄 Popup cerrado - esperando a que Firebase procese...')
+      console.log('🔄 Popup cerrado - esperando a que Supabase procese...')
 
-      // Guardar token si está disponible
-      if (result?.accessToken) {
-        console.log('💾 Guardando token de acceso...')
-        sessionStorage.setItem(TOKEN_KEY, result.accessToken)
-        accessToken.value = result.accessToken
-      }
-
-      // Asignar user inmediatamente si está disponible
-      if (result?.user) {
-        user.value = result.user
-        console.log('👤 Usuario asignado:', result.user.email)
-      }
-
-      // El estado completo se asignará vía onAuthChange
+      // Con Supabase, el usuario se actualiza a través del callback onAuthChange
+      // El acceso token se gestiona automáticamente por Supabase
       console.log('✅ Popup procesado')
     } catch (loginError) {
       console.error('❌ Error en login:', loginError)
@@ -103,7 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       error.value = null
-      await firebaseLogout()
+      await supabaseLogout()
       user.value = null
       accessToken.value = null
       sessionStorage.removeItem(TOKEN_KEY)

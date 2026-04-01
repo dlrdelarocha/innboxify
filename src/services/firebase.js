@@ -1,110 +1,51 @@
-import { initializeApp } from 'firebase/app'
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  browserSessionPersistence
-} from 'firebase/auth'
+import { createClient } from '@supabase/supabase-js'
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-console.log('🔧 Firebase Config Debug:')
-console.log('  API Key present:', !!firebaseConfig.apiKey)
-console.log('  Auth Domain:', firebaseConfig.authDomain)
-console.log('  Project ID:', firebaseConfig.projectId)
-console.log('  App ID present:', !!firebaseConfig.appId)
+console.log('🔧 Supabase Config Debug:')
+console.log('  URL present:', !!supabaseUrl)
+console.log('  Anon Key present:', !!supabaseAnonKey)
+console.log('  URL:', supabaseUrl)
 
-export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain)
+export const isConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
-let auth = null
-let provider = null
+let supabase = null
 
 if (isConfigured) {
-  const app = initializeApp(firebaseConfig)
-  auth = getAuth(app)
-
-  // Set persistence to SESSION (clears on browser close - best practice)
-  setPersistence(auth, browserSessionPersistence).catch(error => {
-    console.warn('Could not set session persistence:', error)
-  })
-
-  const GMAIL_SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.modify',
-    'https://www.googleapis.com/auth/gmail.labels',
-    'https://www.googleapis.com/auth/gmail.settings.basic'
-  ]
-
-  provider = new GoogleAuthProvider()
-  provider.setCustomParameters({
-    prompt: 'consent' // Always show consent screen
-  })
-  GMAIL_SCOPES.forEach(scope => provider.addScope(scope))
+  supabase = createClient(supabaseUrl, supabaseAnonKey)
+  console.log('✅ Supabase inicializado')
 }
 
 export async function loginWithGoogle() {
-  if (!isConfigured) throw new Error('Firebase no está configurado')
+  if (!isConfigured) throw new Error('Supabase no está configurado')
   try {
     console.log('🔐 Abriendo popup de Google...')
-    console.log('🌐 Dominio actual:', window.location.hostname)
-    console.log('🔑 Auth domain:', firebaseConfig.authDomain)
 
-    // Usar signInWithPopup en lugar de redirect
-    // En Vercel, popup funciona mejor que redirect
-    const result = await signInWithPopup(auth, provider)
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+
+    if (error) throw error
 
     console.log('✅ Autenticación completada')
-    console.log('👤 Usuario:', result.user.email)
-
-    const credential = GoogleAuthProvider.credentialFromResult(result)
-
-    if (!credential?.accessToken) {
-      console.warn('⚠️ Token de acceso no disponible (esto es normal para OAuth)')
-    } else {
-      console.log('✅ Token de acceso obtenido')
-    }
-
-    return {
-      user: result.user,
-      accessToken: credential?.accessToken || null
-    }
+    return data
   } catch (error) {
     console.error('❌ Error en autenticación:', error)
-    console.error('Código de error:', error.code)
-    console.error('Mensaje completo:', error.message)
+    console.error('Mensaje:', error.message)
 
-    if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('Este dominio no está autorizado en Firebase. Agrega innboxify.vercel.app a Firebase Console.')
-    }
-    if (error.code === 'auth/popup-blocked') {
-      throw new Error('El popup fue bloqueado. Desactiva el bloqueador de popups.')
-    }
-    if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Cerraste el popup de Google.')
-    }
-    if (error.code === 'auth/operation-not-supported-in-this-environment') {
-      throw new Error('OAuth no está soportado en este navegador.')
-    }
-    if (error.code === 'auth/network-request-failed') {
-      throw new Error('Error de conexión. Verifica tu internet.')
-    }
-
-    throw error
+    throw new Error(error.message || 'Error en autenticación')
   }
 }
 
 export async function logout() {
-  if (!auth) return
+  if (!supabase) return
   try {
-    await signOut(auth)
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
     console.log('✅ Sesión cerrada')
   } catch (error) {
     console.error('❌ Error al cerrar sesión:', error)
@@ -113,11 +54,25 @@ export async function logout() {
 }
 
 export function onAuthChange(callback) {
-  if (!auth) {
+  if (!supabase) {
     callback(null)
     return () => {}
   }
-  return onAuthStateChanged(auth, callback)
+
+  // Obtener el usuario actual al iniciar
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    callback(user)
+  })
+
+  // Escuchar cambios de autenticación
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (event, session) => {
+      console.log('🔄 Auth event:', event)
+      callback(session?.user || null)
+    }
+  )
+
+  return () => subscription?.unsubscribe()
 }
 
-export { auth }
+export { supabase }
