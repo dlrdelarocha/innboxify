@@ -68,29 +68,44 @@ export async function loginWithGoogle() {
 }
 
 export async function getRedirectResultIfExists() {
-  if (!auth) return null
+  if (!auth) {
+    console.log('❌ Auth no inicializado')
+    return null
+  }
   try {
     console.log('🔍 Verificando resultado de autenticación...')
     const result = await getRedirectResult(auth)
 
     if (result) {
       console.log('✅ Autenticación completada')
+      console.log('Usuario:', result.user.email)
+
       const credential = GoogleAuthProvider.credentialFromResult(result)
 
       if (!credential?.accessToken) {
         console.warn('⚠️ Token de acceso no disponible')
+        // Firebase puede no incluir accessToken en algunos casos
+        // Eso es normal - el usuario está autenticado igual
+      } else {
+        console.log('✅ Token de acceso obtenido')
       }
 
       return {
         user: result.user,
         accessToken: credential?.accessToken || null
       }
+    } else {
+      console.log('ℹ️ No hay resultado de redirect (primera carga o sin redirect)')
     }
-    console.log('ℹ️ No hay sesión de autenticación en progreso')
   } catch (error) {
     console.error('❌ Error al obtener resultado de autenticación:', error)
     console.error('Código de error:', error.code)
-    // Don't throw here - let auth state handle it
+
+    // Ciertos errores son normales - no lanzarlos
+    if (error.code === 'auth/redirect-cancelled-by-user') {
+      console.log('ℹ️ Usuario canceló el redirect')
+      return null
+    }
   }
   return null
 }
