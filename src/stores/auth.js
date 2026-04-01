@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginWithGoogle, logout as firebaseLogout, onAuthChange, getRedirectResultIfExists } from '../services/firebase.js'
+import { loginWithGoogle, logout as firebaseLogout, onAuthChange } from '../services/firebase.js'
 
 const TOKEN_KEY = 'gmail_access_token'
-const TIMEOUT_MS = 5000 // 5 segundos máximo para resolver
+const TIMEOUT_MS = 3000 // 3 segundos máximo para resolver
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
   let _resolveReady
   const ready = new Promise(resolve => { _resolveReady = resolve })
 
-  async function init() {
+  function init() {
     try {
       console.log('🔐 Inicializando autenticación...')
 
@@ -25,28 +25,6 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = savedToken
       }
 
-      // Chequea si viene de un redirect OAuth - PRIMERO
-      let redirectProcessed = false
-      try {
-        console.log('🔍 Buscando resultado de redirect OAuth...')
-        const redirectResult = await getRedirectResultIfExists()
-        if (redirectResult) {
-          console.log('✅ Autenticación exitosa desde redirect')
-          user.value = redirectResult.user
-          accessToken.value = redirectResult.accessToken
-          redirectProcessed = true
-
-          if (redirectResult.accessToken) {
-            sessionStorage.setItem(TOKEN_KEY, redirectResult.accessToken)
-          } else {
-            console.warn('⚠️ No hay token de acceso disponible')
-          }
-        }
-      } catch (redirectError) {
-        console.error('❌ Error procesando redirect:', redirectError)
-        error.value = redirectError.message
-      }
-
       // Escucha cambios de estado de autenticación
       let authStateResolved = false
       const unsubscribe = onAuthChange((firebaseUser) => {
@@ -55,7 +33,9 @@ export const useAuthStore = defineStore('auth', () => {
         if (!authStateResolved) {
           user.value = firebaseUser
 
-          if (!firebaseUser) {
+          if (firebaseUser) {
+            console.log('👤 Usuario:', firebaseUser.email)
+          } else {
             accessToken.value = null
             sessionStorage.removeItem(TOKEN_KEY)
           }
@@ -67,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       })
 
-      // Timeout de seguridad - si después de 5 segundos no se resolvió, hazlo de todas formas
+      // Timeout de seguridad - si después de 3 segundos no se resolvió, hazlo de todas formas
       const timeout = setTimeout(() => {
         if (!authStateResolved) {
           console.warn('⚠️ Timeout en auth state - resolviendo de todas formas')
@@ -94,8 +74,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       error.value = null
       console.log('🔐 Iniciando login con Google...')
-      await loginWithGoogle()
-      console.log('📱 Redirigiendo a Google...')
+      const result = await loginWithGoogle()
+
+      // Guardar token si está disponible
+      if (result?.accessToken) {
+        console.log('💾 Guardando token de acceso...')
+        sessionStorage.setItem(TOKEN_KEY, result.accessToken)
+        accessToken.value = result.accessToken
+      }
+
+      // El user se asignará vía onAuthChange
+      console.log('✅ Login completado')
     } catch (loginError) {
       console.error('❌ Error en login:', loginError)
       error.value = loginError.message

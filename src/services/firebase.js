@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app'
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
   setPersistence,
@@ -46,12 +45,27 @@ if (isConfigured) {
 }
 
 export async function loginWithGoogle() {
-  if (!isConfigured) throw new Error('Firebase not configured')
+  if (!isConfigured) throw new Error('Firebase no está configurado')
   try {
-    console.log('🔐 Iniciando autenticación con Google...')
-    console.log('📱 Redirigiendo a Google...')
-    await signInWithRedirect(auth, provider)
-    // Note: Page will redirect to Google, then back to app
+    console.log('🔐 Abriendo popup de Google...')
+
+    // Usar signInWithPopup en lugar de redirect
+    // En Vercel, popup funciona mejor que redirect
+    const result = await signInWithPopup(auth, provider)
+
+    console.log('✅ Autenticación completada')
+    const credential = GoogleAuthProvider.credentialFromResult(result)
+
+    if (!credential?.accessToken) {
+      console.warn('⚠️ Token de acceso no disponible')
+    } else {
+      console.log('✅ Token de acceso obtenido')
+    }
+
+    return {
+      user: result.user,
+      accessToken: credential?.accessToken || null
+    }
   } catch (error) {
     console.error('❌ Error en autenticación:', error)
     console.error('Código de error:', error.code)
@@ -59,55 +73,15 @@ export async function loginWithGoogle() {
     if (error.code === 'auth/unauthorized-domain') {
       throw new Error('Este dominio no está autorizado en Firebase. Verifica Firebase Console.')
     }
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('El popup fue bloqueado. Verifica tu navegador.')
+    }
     if (error.code === 'auth/operation-not-supported-in-this-environment') {
       throw new Error('OAuth no está soportado en este navegador.')
     }
 
     throw error
   }
-}
-
-export async function getRedirectResultIfExists() {
-  if (!auth) {
-    console.log('❌ Auth no inicializado')
-    return null
-  }
-  try {
-    console.log('🔍 Verificando resultado de autenticación...')
-    const result = await getRedirectResult(auth)
-
-    if (result) {
-      console.log('✅ Autenticación completada')
-      console.log('Usuario:', result.user.email)
-
-      const credential = GoogleAuthProvider.credentialFromResult(result)
-
-      if (!credential?.accessToken) {
-        console.warn('⚠️ Token de acceso no disponible')
-        // Firebase puede no incluir accessToken en algunos casos
-        // Eso es normal - el usuario está autenticado igual
-      } else {
-        console.log('✅ Token de acceso obtenido')
-      }
-
-      return {
-        user: result.user,
-        accessToken: credential?.accessToken || null
-      }
-    } else {
-      console.log('ℹ️ No hay resultado de redirect (primera carga o sin redirect)')
-    }
-  } catch (error) {
-    console.error('❌ Error al obtener resultado de autenticación:', error)
-    console.error('Código de error:', error.code)
-
-    // Ciertos errores son normales - no lanzarlos
-    if (error.code === 'auth/redirect-cancelled-by-user') {
-      console.log('ℹ️ Usuario canceló el redirect')
-      return null
-    }
-  }
-  return null
 }
 
 export async function logout() {
