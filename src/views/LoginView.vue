@@ -17,9 +17,15 @@ async function handleLogin() {
   loading.value = true
   error.value = null
   try {
+    console.log('🔐 Iniciando login con Google...')
+    console.log('Firebase ready:', firebaseReady)
     await auth.login()
+    console.log('✅ Login exitoso, redirigiendo a dashboard...')
     router.push('/dashboard')
   } catch (e) {
+    console.error('❌ Error de login:', e)
+    console.error('Error code:', e.code)
+    console.error('Error message:', e.message)
     error.value = e.message
   } finally {
     loading.value = false
